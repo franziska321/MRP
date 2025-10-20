@@ -1,6 +1,7 @@
 package at.fhtw.server;
 
 import at.fhtw.server.handlers.LoginHandler;
+import at.fhtw.server.handlers.ProfileHandler;
 import at.fhtw.server.handlers.RegisterHandler;
 import com.sun.net.httpserver.HttpServer;
 
@@ -16,6 +17,7 @@ public class HttpServerApp {
         //Routen
         server.createContext("/api/users/register", new RegisterHandler());
         server.createContext("/api/users/login", new LoginHandler());
+        server.createContext("/api/users/profile", new ProfileHandler());
 
         server.setExecutor(null);
         server.start();
