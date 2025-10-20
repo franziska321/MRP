@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class UserRepository {
     private static final String FILE_PATH = "users.json";
@@ -33,5 +34,11 @@ public class UserRepository {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Optional<User> findByUsername(String username) {
+        return loadUsers().stream()
+                .filter(u -> u.getUsername().equalsIgnoreCase(username))
+                .findFirst();
     }
 }
