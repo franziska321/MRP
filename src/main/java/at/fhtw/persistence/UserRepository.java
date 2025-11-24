@@ -1,44 +1,109 @@
 package at.fhtw.persistence;
 
 import at.fhtw.models.User;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.File;
-import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class UserRepository {
-    private static final String FILE_PATH = "users.json";
-    private final ObjectMapper objectMapper = new ObjectMapper();
+
+
+
+    public void initDatabase() {
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            Statement stmt = conn.createStatement();
+            // Users Tabelle
+            stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "username VARCHAR(50) UNIQUE NOT NULL, " +
+                    "password_hash VARCHAR(255) NOT NULL, " +
+                    "token VARCHAR(255), " +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                    ")");
+
+            // Media Tabelle
+            stmt.execute("CREATE TABLE IF NOT EXISTS media (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "title VARCHAR(255) NOT NULL, " +
+                    "description TEXT, " +
+                    "media_type VARCHAR(20) NOT NULL, " +
+                    "release_year INTEGER, " +
+                    "genres TEXT[], " +
+                    "age_restriction INTEGER, " +
+                    "user_id INTEGER REFERENCES users(id), " +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                    ")");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     public List<User> loadUsers() {
-        try {
-            File file = new File(FILE_PATH);
-            if (!file.exists()) {
-                return new ArrayList<>();
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                User user = new User(
+                        rs.getString("username"),
+                        rs.getString("password_hash")
+                );
+                user.setToken(rs.getString("token"));
+                users.add(user);
             }
-            return objectMapper.readValue(file, new TypeReference<List<User>>() {
-            });
-        } catch (IOException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            return new ArrayList<>();
         }
+        return users;
     }
 
     public void saveUsers(List<User> users) {
-        try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(FILE_PATH), users);
-        } catch (IOException e) {
+        // Alte Methode löschen - wir arbeiten jetzt direkt mit der DB
+    }
+
+    public boolean saveUser(User user) {
+        String sql = "INSERT INTO users (username, password_hash, token) VALUES (?, ?, ?)";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, user.getUsername());
+            pstmt.setString(2, user.getPasswordHash());
+            pstmt.setString(3, user.getToken());
+
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
     }
 
-    public Optional<User> findByUsername(String username) {
-        return loadUsers().stream()
-                .filter(u -> u.getUsername().equalsIgnoreCase(username))
-                .findFirst();
+    public User findByUsername(String username) {
+        String sql = "SELECT * FROM users WHERE username = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                User user = new User(
+                        rs.getString("username"),
+                        rs.getString("password_hash")
+                );
+                user.setToken(rs.getString("token"));
+                return user;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error finding user: " + e.getMessage());
+        }
+        return null;
     }
 }
