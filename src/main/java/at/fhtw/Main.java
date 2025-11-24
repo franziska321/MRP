@@ -2,7 +2,6 @@ package at.fhtw;
 
 import at.fhtw.persistence.DatabaseConfig;
 import at.fhtw.persistence.UserRepository;
-import at.fhtw.presentation.MediaPresentation;
 import at.fhtw.server.HttpServerApp;
 
 public class Main {

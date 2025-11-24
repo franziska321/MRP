@@ -1,6 +1,7 @@
 package at.fhtw.server;
 
 import at.fhtw.server.handlers.LoginHandler;
+import at.fhtw.server.handlers.MediaHandler;
 import at.fhtw.server.handlers.ProfileHandler;
 import at.fhtw.server.handlers.RegisterHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -18,6 +19,7 @@ public class HttpServerApp {
         server.createContext("/api/users/register", new RegisterHandler());
         server.createContext("/api/users/login", new LoginHandler());
         server.createContext("/api/users/profile", new ProfileHandler());
+        server.createContext("/api/media", new MediaHandler());
 
         server.setExecutor(null);
         server.start();

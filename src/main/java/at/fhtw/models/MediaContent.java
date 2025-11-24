@@ -1,21 +1,41 @@
 package at.fhtw.models;
 
 import at.fhtw.models.enums.MediaType;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "mediaType"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = Movie.class, name = "movie"),
+        @JsonSubTypes.Type(value = Game.class, name = "game"),
+        @JsonSubTypes.Type(value = Series.class, name = "series")
+})
+
 @NoArgsConstructor
 @ToString
+@Data
 
 public abstract sealed class MediaContent permits Movie, Game, Series{
+    private int id;
     private String title;
     private String description;
-    private MediaType type;
+    private String mediaType; // "movie", "series", "game"
     private int releaseYear;
     private List<String> genres;
     private int ageRestriction;
+    private int userId; // Wer hat es erstellt
 
 
     public MediaContent(String title, int releaseYear, String description) {
@@ -24,15 +44,7 @@ public abstract sealed class MediaContent permits Movie, Game, Series{
         this.description = description;
     }
 
-    //Getter
-    public String getTitle() { return title; }
-    public int getReleaseYear() { return releaseYear; }
-    public String getDescription() { return description; }
 
-    // Setter
-    public void setTitle(String title) { this.title = title; }
-    public void setReleaseYear(int releaseYear) { this.releaseYear = releaseYear; }
-    public void setDescription(String description) { this.description = description; }
 
 
     // für Unterklassen Gettr

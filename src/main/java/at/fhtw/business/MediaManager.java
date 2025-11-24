@@ -1,34 +1,47 @@
 package at.fhtw.business;
 
-import at.fhtw.models.Game;
 import at.fhtw.models.MediaContent;
-import at.fhtw.models.Movie;
-import at.fhtw.models.Series;
 import at.fhtw.persistence.MediaRepository;
+
+import java.util.List;
 
 public class MediaManager {
     private MediaRepository mediaRepository = new MediaRepository();
 
-    public void addMedia(MediaContent media) {
-        System.out.println("Adding media: " + media.getTitle());
-    }
-    public void saveMedia(MediaContent media) {
-        mediaRepository.save(media);
+    public boolean createMedia(MediaContent media) {
+        System.out.println("MediaManager.createMedia called");
+
+        // VALIDIERUNG
+        if (media.getTitle() == null || media.getTitle().trim().isEmpty()) {
+            System.err.println("Validation failed: Title is required");
+            return false;
+        }
+
+        if (media.getReleaseYear() < 1900 || media.getReleaseYear() > 2030) {
+            System.err.println("Validation failed: Invalid release year");
+            return false;
+        }
+
+        String type = media.getMediaType() != null ? media.getMediaType() : media.getType();
+        if (type == null || (!type.equals("movie") && !type.equals("game") && !type.equals("series"))) {
+            System.err.println("Validation failed: Invalid media type: " + type);
+            return false;
+        }
+
+        System.out.println("Validation passed for: " + media.getTitle());
+
+        try {
+            boolean result = mediaRepository.saveMedia(media);
+            System.out.println("Save result: " + result);
+            return result;
+        } catch (Exception e) {
+            System.err.println("Error in MediaManager: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
-    public void addMovie(String title, int year, String description) {
-        // Regeln für Movie
-        Movie movie = new Movie(title, year, description);
-        mediaRepository.save(movie);
-    }
-
-    public void addGame(String title, int year, String description) {
-        Game game = new Game(title, year, description);
-        mediaRepository.save(game);
-    }
-
-    public void addSeries(String title, int year, String description) {
-        Series series = new Series(title, year, description);
-        mediaRepository.save(series);
+    public List<MediaContent> getAllMedia() {
+        return mediaRepository.getAllMedia();
     }
 }
