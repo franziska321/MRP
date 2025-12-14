@@ -9,7 +9,6 @@ public class MediaManager {
     private MediaRepository mediaRepository = new MediaRepository();
 
     public boolean createMedia(MediaContent media) {
-        System.out.println("MediaManager.createMedia called");
 
         // VALIDIERUNG
         if (media.getTitle() == null || media.getTitle().trim().isEmpty()) {
@@ -28,11 +27,9 @@ public class MediaManager {
             return false;
         }
 
-        System.out.println("Validation passed for: " + media.getTitle());
 
         try {
             boolean result = mediaRepository.saveMedia(media);
-            System.out.println("Save result: " + result);
             return result;
         } catch (Exception e) {
             System.err.println("Error in MediaManager: " + e.getMessage());

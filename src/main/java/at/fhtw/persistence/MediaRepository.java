@@ -35,7 +35,6 @@ public class MediaRepository {
 
 
             int rowsAffected = pstmt.executeUpdate();
-            System.out.println("Rows affected: " + rowsAffected);
 
             return rowsAffected > 0;
 
