@@ -4,6 +4,7 @@ import at.fhtw.server.handlers.LoginHandler;
 import at.fhtw.server.handlers.MediaHandler;
 import at.fhtw.server.handlers.ProfileHandler;
 import at.fhtw.server.handlers.RegisterHandler;
+import at.fhtw.server.handlers.RatingHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -20,6 +21,7 @@ public class HttpServerApp {
         server.createContext("/api/users/login", new LoginHandler());
         server.createContext("/api/users/profile", new ProfileHandler());
         server.createContext("/api/media", new MediaHandler());
+        server.createContext("/api/media/rate", new RatingHandler());
 
         server.setExecutor(null);
         server.start();

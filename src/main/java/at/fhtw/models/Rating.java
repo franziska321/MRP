@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class Rating {
     private int id;
     private int mediaId;
-    private int userId;
+    private String username;
     private int stars;
     private String comment;
     private boolean isApproved = false;
