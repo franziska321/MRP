@@ -50,10 +50,7 @@ public abstract sealed class MediaContent permits Movie, Game, Series{
     // für Unterklassen Gettr
     public abstract String getType();
 
-    // Liskov im Prinzip aber das geht besser...
-    void rateMedia(int rating){
-        System.out.println("Media rated....");
-    }
+
 
 
 }

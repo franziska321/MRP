@@ -1,8 +1,13 @@
 package at.fhtw.persistence;
 
+import at.fhtw.models.Game;
 import at.fhtw.models.MediaContent;
+import at.fhtw.models.Movie;
+import at.fhtw.models.Series;
+
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MediaRepository {
@@ -54,12 +59,76 @@ public class MediaRepository {
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                // Media Objekt aus ResultSet erstellen
-                // (musst ich noch implementieren)
+                MediaContent media = createMediaFromResultSet(rs);
+                mediaList.add(media);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return mediaList;
+    }
+
+    public List<MediaContent> searchByTitle(String title) {
+        List<MediaContent> mediaList = new ArrayList<>();
+        String sql = "SELECT * FROM media WHERE LOWER(title) LIKE LOWER(?)";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, "%" + title + "%");
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                MediaContent media = createMediaFromResultSet(rs);
+                mediaList.add(media);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error searching media: " + e.getMessage());
+        }
+        return mediaList;
+    }
+
+    private MediaContent createMediaFromResultSet(ResultSet rs) throws SQLException {
+        String mediaType = rs.getString("media_type");
+        MediaContent media = switch (mediaType.toLowerCase()) {
+            case "movie" -> new Movie(
+                    rs.getString("title"),
+                    rs.getInt("release_year"),
+                    rs.getString("description")
+            );
+            case "game" -> new Game(
+                    rs.getString("title"),
+                    rs.getInt("release_year"),
+                    rs.getString("description")
+            );
+            case "series" -> new Series(
+                    rs.getString("title"),
+                    rs.getInt("release_year"),
+                    rs.getString("description")
+            );
+            default ->
+                    new Movie(
+                            rs.getString("title"),
+                            rs.getInt("release_year"),
+                            rs.getString("description")
+                    );
+        };
+
+        media.setId(rs.getInt("id"));
+        media.setMediaType(mediaType);
+
+        // Genres (Array aus PostgreSQL)
+        Array genresArray = rs.getArray("genres");
+        if (genresArray != null) {
+            String[] genres = (String[]) genresArray.getArray();
+            media.setGenres(Arrays.asList(genres));
+        }
+
+        media.setAgeRestriction(rs.getInt("age_restriction"));
+        media.setUserId(rs.getInt("user_id"));
+
+        return media;
+
     }
 }

@@ -14,4 +14,5 @@ public class Rating {
     private boolean isApproved = false;
     private int likes = 0;
     private LocalDateTime createdAt;
+    private boolean wahr = true;
 }

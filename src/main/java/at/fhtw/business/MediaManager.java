@@ -41,4 +41,13 @@ public class MediaManager {
     public List<MediaContent> getAllMedia() {
         return mediaRepository.getAllMedia();
     }
+
+    public List<MediaContent> searchMediaByTitle(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            return mediaRepository.getAllMedia();
+        }
+        return mediaRepository.searchByTitle(title);
+    }
+
 }
+

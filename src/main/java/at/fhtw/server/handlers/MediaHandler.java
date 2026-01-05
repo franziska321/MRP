@@ -10,6 +10,7 @@ import at.fhtw.server.AuthService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 public class MediaHandler implements HttpHandler {
     private final MediaManager mediaManager = new MediaManager();
@@ -58,11 +59,30 @@ public class MediaHandler implements HttpHandler {
     }
 
     private void handleGetMedia(HttpExchange exchange) throws IOException {
-        var mediaList = mediaManager.getAllMedia();
-        String response = mapper.writeValueAsString(mediaList);
+        String title = getQueryParam(exchange, "title");
 
+        List<MediaContent> mediaList;
+        if (title == null || title.trim().isEmpty()) {
+            mediaList = mediaManager.getAllMedia(); // all media (not a search)
+        } else {
+            mediaList = mediaManager.searchMediaByTitle(title); // search
+        }
+
+        String response = mapper.writeValueAsString(mediaList);
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         sendResponse(exchange, 200, response);
+    }
+
+    private String getQueryParam(HttpExchange exchange, String paramName) {
+        String query = exchange.getRequestURI().getQuery();
+        if (query == null) return null;
+
+        for (String param : query.split("&")) {
+            if (param.startsWith(paramName + "=")) {
+                return param.substring(paramName.length() + 1);
+            }
+        }
+        return null;
     }
 
     private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
@@ -71,4 +91,7 @@ public class MediaHandler implements HttpHandler {
             os.write(response.getBytes());
         }
     }
+
+
+
 }

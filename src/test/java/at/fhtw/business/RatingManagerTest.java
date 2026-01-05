@@ -107,7 +107,7 @@ class RatingManagerTest {
         boolean result1 = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 5, "From user 1");
         assertTrue(result1, "User 1 rating should succeed");
 
-        // Act - User 2 bewertet dasselbe Media
+        // Act - User 2 rates same media
         boolean result2 = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER_2, 4, "From user 2");
 
         // Assert

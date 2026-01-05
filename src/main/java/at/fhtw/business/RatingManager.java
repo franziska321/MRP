@@ -9,6 +9,7 @@ import java.util.List;
 public class RatingManager {
     private final RatingRepository ratingRepository = new RatingRepository();
 
+
     public boolean rateMedia(int mediaID, String username, int stars, String comment) {
         // validate + save ratings
         if (stars < 1 || stars > 5) {
@@ -42,6 +43,7 @@ public class RatingManager {
 
     public boolean deleteRating(int ratingId, String username) {
         // Prüfen ob der User dieses Rating erstellt hat
+
         Rating rating = ratingRepository.getRatingById(ratingId);
         if (rating == null) {
             return false; // Rating existiert nicht

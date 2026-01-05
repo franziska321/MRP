@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RatingRepository {
+    private boolean wahr = true;
     public boolean saveRating(Rating rating) {
         //SQL für in db
         String sql = "INSERT INTO ratings (media_id, username, rating, comment) VALUES (?, ?, ?, ?)";

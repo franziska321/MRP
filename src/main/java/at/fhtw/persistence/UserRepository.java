@@ -63,9 +63,6 @@ public class UserRepository {
         return users;
     }
 
-    public void saveUsers(List<User> users) {
-        // Alte Methode löschen - wir arbeiten jetzt direkt mit der DB
-    }
 
     public boolean saveUser(User user) {
         String sql = "INSERT INTO users (username, password_hash, token) VALUES (?, ?, ?)";
