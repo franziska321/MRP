@@ -1,7 +1,9 @@
 package at.fhtw.business;
 
 import at.fhtw.models.MediaContent;
+import at.fhtw.models.User;
 import at.fhtw.persistence.MediaRepository;
+import at.fhtw.persistence.UserRepository;
 
 import java.util.List;
 
@@ -49,6 +51,37 @@ public class MediaManager {
         return mediaRepository.searchAndFilter(
                 title, genre, mediaType, year, ageRestriction, minRating, sortBy
         );
+    }
+
+    public MediaContent getMediaById(int mediaId) {
+        return mediaRepository.getMediaById(mediaId);
+    }
+
+    public boolean deleteMedia(int mediaId, String requestingUsername) {
+        MediaContent media = mediaRepository.getMediaById(mediaId);
+        if (media == null) {
+            return false;
+        }
+
+        UserRepository userRepo = new UserRepository();
+        User user = userRepo.findByUsername(requestingUsername);
+        if (user == null) {
+            System.err.println("User " + requestingUsername + " not found");
+            return false;
+        }
+
+        if (media.getUserId() == null) {
+            System.err.println("Media has no creator ID");
+            return false;
+        }
+
+        if (!media.getUserId().equals(user.getId())) {  // ← ID VERGLEICH
+            System.err.println("User " + user.getId() + " is not creator " + media.getUserId());
+            return false;
+        }
+
+        // 4. Löschen
+        return mediaRepository.deleteMedia(mediaId);
     }
 
 }

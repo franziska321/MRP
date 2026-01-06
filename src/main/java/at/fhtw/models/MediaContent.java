@@ -35,7 +35,7 @@ public abstract sealed class MediaContent permits Movie, Game, Series{
     private int releaseYear;
     private List<String> genres;
     private int ageRestriction;
-    private int userId; // Wer hat es erstellt
+    private Integer userId; // Wer hat es erstellt, kann null sein
 
 
     public MediaContent(String title, int releaseYear, String description) {

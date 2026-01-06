@@ -54,6 +54,7 @@ public class UserRepository {
                         rs.getString("username"),
                         rs.getString("password_hash")
                 );
+                user.setId(rs.getInt("id"));
                 user.setToken(rs.getString("token"));
                 users.add(user);
             }
@@ -65,7 +66,7 @@ public class UserRepository {
 
 
     public boolean saveUser(User user) {
-        String sql = "INSERT INTO users (username, password_hash, token) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO users (username, password_hash, token) VALUES (?, ?, ?) RETURNING id";
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -74,9 +75,15 @@ public class UserRepository {
             pstmt.setString(2, user.getPasswordHash());
             pstmt.setString(3, user.getToken());
 
-            return pstmt.executeUpdate() > 0;
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                user.setId(rs.getInt("id"));  // ← id from db
+                return true;
+            }
+            return false;
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error saving user: " + e.getMessage());
             return false;
         }
     }
@@ -95,6 +102,7 @@ public class UserRepository {
                         rs.getString("username"),
                         rs.getString("password_hash")
                 );
+                user.setId(rs.getInt("id"));
                 user.setToken(rs.getString("token"));
                 return user;
             }

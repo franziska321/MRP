@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 
 public class User {
+    private Integer id;
     private  String username;
     private String passwordHash;
     private String token;
@@ -17,5 +18,6 @@ public class User {
         this.username = username;
         this.passwordHash = passwordHash;
         this.token = username + "_mrpToken";
+        this.id = null; //set by DB
     }
 }

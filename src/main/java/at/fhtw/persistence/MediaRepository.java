@@ -69,6 +69,41 @@ public class MediaRepository {
     }
 
 
+    public MediaContent getMediaById(int id) {
+        String sql = "SELECT * FROM media WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return createMediaFromResultSet(rs);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting media by ID: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public boolean deleteMedia(int id) {
+        String sql = "DELETE FROM media WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, id);
+            return pstmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Error deleting media: " + e.getMessage());
+            return false;
+        }
+    }
+
+
     public List<MediaContent> searchAndFilter(String title, String genre, String mediaType,
                                               Integer year, Integer ageRestriction,
                                               Integer minRating, String sortBy) {
