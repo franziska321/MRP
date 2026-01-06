@@ -1,6 +1,7 @@
 package at.fhtw.server.handlers;
 
 import at.fhtw.models.User;
+import at.fhtw.persistence.FavoritesRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -19,19 +20,34 @@ public class MediaHandler implements HttpHandler {
     private final MediaManager mediaManager = new MediaManager();
     private final AuthService authService = new AuthService();
     private final ObjectMapper mapper = new ObjectMapper();
+    private final FavoritesRepository favoritesRepo = new FavoritesRepository();
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
+        String path = exchange.getRequestURI().getPath();  // NEU: Pfad holen
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
 
-        // Authorization check
         if (!authService.isAuthorized(authHeader)) {
             sendResponse(exchange, 401, "Unauthorized");
             return;
         }
 
         try {
+            String[] pathParts = path.split("/");
+
+            if (pathParts.length == 5 && "favorite".equals(pathParts[4])) {
+                // /api/media/{id}/favorite
+                int mediaId = Integer.parseInt(pathParts[3]);
+
+                if ("POST".equals(method)) {
+                    handleToggleFavorite(exchange, mediaId, authHeader);
+                } else {
+                    sendResponse(exchange, 405, "Method not allowed");
+                }
+                return;
+            }
+
             switch (method) {
                 case "POST":
                     handleCreateMedia(exchange);
@@ -45,6 +61,9 @@ public class MediaHandler implements HttpHandler {
                 default:
                     sendResponse(exchange, 405, "Method not allowed");
             }
+
+        } catch (NumberFormatException e) {
+            sendResponse(exchange, 400, "Invalid ID format");
         } catch (Exception e) {
             sendResponse(exchange, 500, "Internal server error");
         }
@@ -199,6 +218,37 @@ public class MediaHandler implements HttpHandler {
         exchange.sendResponseHeaders(statusCode, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
+        }
+    }
+
+    private void handleToggleFavorite(HttpExchange exchange, int mediaId, String authHeader) throws IOException {
+        User user = authService.getUserByToken(authHeader);
+        if (user == null) {
+            sendResponse(exchange, 401, "Unauthorized");
+            return;
+        }
+
+        MediaContent media = mediaManager.getMediaById(mediaId);
+        if (media == null) {
+            sendResponse(exchange, 404, "Media not found");
+            return;
+        }
+
+        // wenn schon favorisiert, dann entfernen, sonst hinzufügen
+        boolean isCurrentlyFavorite = favoritesRepo.isFavorite(user.getId(), mediaId);
+        boolean success;
+
+        if (isCurrentlyFavorite) {
+            success = favoritesRepo.removeFavorite(user.getId(), mediaId);
+        } else {
+            success = favoritesRepo.addFavorite(user.getId(), mediaId);
+        }
+
+        if (success) {
+            String action = isCurrentlyFavorite ? "removed from" : "added to";
+            sendResponse(exchange, 200, "Media " + action + " favorites");
+        } else {
+            sendResponse(exchange, 500, "Error updating favorites");
         }
     }
 }

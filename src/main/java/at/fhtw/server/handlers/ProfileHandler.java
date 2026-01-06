@@ -1,6 +1,7 @@
 package at.fhtw.server.handlers;
 
 import at.fhtw.models.User;
+import at.fhtw.persistence.FavoritesRepository;
 import at.fhtw.server.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
@@ -8,6 +9,9 @@ import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ProfileHandler implements HttpHandler {
 
@@ -39,13 +43,27 @@ public class ProfileHandler implements HttpHandler {
             return;
         }
 
-        // User als JSON zurückgeben
-        String response = mapper.writeValueAsString(user);
-        exchange.getResponseHeaders().add("Content-Type", "application/json");
-        exchange.sendResponseHeaders(200, response.getBytes().length);
+        FavoritesRepository favoritesRepo = new FavoritesRepository();
+        List<Integer> favoriteMediaIds = favoritesRepo.getUserFavorites(user.getId());
 
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("id", user.getId());
+        responseData.put("username", user.getUsername());
+        responseData.put("token", user.getToken());
+        responseData.put("favorites", favoriteMediaIds);  // NEU: Favorites hinzufügen
+        responseData.put("favoritesCount", favoriteMediaIds.size());  // Optional: Count
+
+        String response = mapper.writeValueAsString(responseData);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        sendResponse(exchange, 200, response);
+    }
+
+
+    private void sendResponse(HttpExchange exchange, int status, String response) throws IOException {
+        exchange.sendResponseHeaders(status, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
         }
     }
+
 }
