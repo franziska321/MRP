@@ -1,5 +1,6 @@
 package at.fhtw.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -13,6 +14,9 @@ public class Rating {
     private String comment;
     private boolean isApproved = false;
     private int likes = 0;
+
+    @JsonIgnore
     private LocalDateTime createdAt;
+
     private boolean wahr = true;
 }

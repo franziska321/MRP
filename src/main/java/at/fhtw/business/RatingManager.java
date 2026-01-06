@@ -42,16 +42,15 @@ public class RatingManager {
     }
 
     public boolean deleteRating(int ratingId, String username) {
-        // Prüfen ob der User dieses Rating erstellt hat
-
         Rating rating = ratingRepository.getRatingById(ratingId);
         if (rating == null) {
-            return false; // Rating existiert nicht
+            System.err.println("Rating not found: " + ratingId);
+            return false;
         }
 
-        // Nur der Ersteller kann löschen
         if (!rating.getUsername().equals(username)) {
-            return false; // Nicht autorisiert
+            System.err.println("User " + username + " not authorized to delete rating " + ratingId);
+            return false;
         }
 
         return ratingRepository.deleteRating(ratingId);
