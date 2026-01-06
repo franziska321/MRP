@@ -10,7 +10,9 @@ import at.fhtw.server.AuthService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MediaHandler implements HttpHandler {
     private final MediaManager mediaManager = new MediaManager();
@@ -59,14 +61,20 @@ public class MediaHandler implements HttpHandler {
     }
 
     private void handleGetMedia(HttpExchange exchange) throws IOException {
-        String title = getQueryParam(exchange, "title");
+        Map<String, String> params = getQueryParams(exchange);
 
-        List<MediaContent> mediaList;
-        if (title == null || title.trim().isEmpty()) {
-            mediaList = mediaManager.getAllMedia(); // all media (not a search)
-        } else {
-            mediaList = mediaManager.searchMediaByTitle(title); // search
-        }
+        String title = params.get("title");
+        String genre = params.get("genre");
+        String mediaType = params.get("mediaType");
+        Integer year = parseInteger(params.get("releaseYear"));
+        Integer ageRestriction = parseInteger(params.get("ageRestriction"));
+        Integer minRating = parseInteger(params.get("minRating"));
+        String sortBy = params.get("sortBy"); // "title", "year", "score"
+
+        var mediaList = mediaManager.searchAndFilter(
+                title, genre, mediaType, year, ageRestriction, minRating, sortBy
+        );
+
 
         String response = mapper.writeValueAsString(mediaList);
         exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -83,6 +91,33 @@ public class MediaHandler implements HttpHandler {
             }
         }
         return null;
+    }
+
+    private Map<String, String> getQueryParams(HttpExchange exchange) {
+        Map<String, String> params = new HashMap<>();
+        String query = exchange.getRequestURI().getQuery();
+
+        if (query != null) {
+            for (String param : query.split("&")) {
+                String[] pair = param.split("=");
+                if (pair.length == 2) {
+                    params.put(pair[0], pair[1]);
+                }
+            }
+        }
+        return params;
+    }
+
+    private Integer parseInteger(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid integer value: " + value);
+            return null;
+        }
     }
 
     private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {

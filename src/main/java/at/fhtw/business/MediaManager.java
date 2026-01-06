@@ -42,11 +42,13 @@ public class MediaManager {
         return mediaRepository.getAllMedia();
     }
 
-    public List<MediaContent> searchMediaByTitle(String title) {
-        if (title == null || title.trim().isEmpty()) {
-            return mediaRepository.getAllMedia();
-        }
-        return mediaRepository.searchByTitle(title);
+
+    public List<MediaContent> searchAndFilter(String title, String genre, String mediaType,
+                                              Integer year, Integer ageRestriction,
+                                              Integer minRating, String sortBy) {
+        return mediaRepository.searchAndFilter(
+                title, genre, mediaType, year, ageRestriction, minRating, sortBy
+        );
     }
 
 }

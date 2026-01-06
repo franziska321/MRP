@@ -68,14 +68,77 @@ public class MediaRepository {
         return mediaList;
     }
 
-    public List<MediaContent> searchByTitle(String title) {
+
+    public List<MediaContent> searchAndFilter(String title, String genre, String mediaType,
+                                              Integer year, Integer ageRestriction,
+                                              Integer minRating, String sortBy) {
+        StringBuilder sql = new StringBuilder("""
+        SELECT m.*, COALESCE(AVG(r.rating), 0) as avg_rating
+        FROM media m
+        LEFT JOIN ratings r ON m.id = r.media_id
+        WHERE 1=1
+    """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (title != null) {
+            sql.append(" AND LOWER(m.title) LIKE LOWER(?)");
+            params.add("%" + title + "%");
+        }
+
+        if (genre != null) {
+            sql.append(" AND ? = ANY(m.genres)");
+            params.add(genre);
+        }
+
+        if (mediaType != null) {
+            sql.append(" AND m.media_type = ?");
+            params.add(mediaType.toLowerCase());
+        }
+
+        if (year != null) {
+            sql.append(" AND m.release_year = ?");
+            params.add(year);
+        }
+
+        if (ageRestriction != null) {
+            sql.append(" AND m.age_restriction <= ?");
+            params.add(ageRestriction);
+        }
+
+        sql.append(" GROUP BY m.id");
+
+        if (minRating != null) {
+            sql.append(" HAVING COALESCE(AVG(r.rating), 0) >= ?");
+            params.add(minRating);
+        }
+
+        if (sortBy != null) {
+            sql.append(" ORDER BY ");
+            switch (sortBy.toLowerCase()) {
+                case "title":
+                    sql.append("m.title ASC");
+                    break;
+                case "year":
+                    sql.append("m.release_year DESC");
+                    break;
+                case "score":
+                    sql.append("avg_rating DESC");
+                    break;
+                default:
+                    sql.append("m.id");
+            }
+        }
+
         List<MediaContent> mediaList = new ArrayList<>();
-        String sql = "SELECT * FROM media WHERE LOWER(title) LIKE LOWER(?)";
+        String finalSql = sql.toString();
 
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(finalSql)) {
 
-            pstmt.setString(1, "%" + title + "%");
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
 
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -84,8 +147,9 @@ public class MediaRepository {
             }
 
         } catch (SQLException e) {
-            System.err.println("Error searching media: " + e.getMessage());
+            System.err.println("Error in searchAndFilter: " + e.getMessage());
         }
+
         return mediaList;
     }
 
