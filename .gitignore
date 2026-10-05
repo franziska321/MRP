@@ -3,7 +3,18 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Local configuration and generated project artifacts
+.env
+.env.*
+!.env.example
+users.json
+Test Results*.html
+Protokoll.docx
+NoMockito.txt
+*.log
+
 ### IntelliJ IDEA ###
+.idea/
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
