@@ -21,8 +21,7 @@ public class HttpServerApp {
         server.createContext("/api/users/login", new LoginHandler());
         server.createContext("/api/users/profile", new ProfileHandler());
         server.createContext("/api/media", new MediaHandler());
-        server.createContext("/api/media/rate", new RatingHandler());
-
+        server.createContext("/api/media/ratings", new RatingHandler());
         server.setExecutor(null);
         server.start();
 

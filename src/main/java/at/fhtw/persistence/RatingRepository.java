@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RatingRepository {
-    private boolean wahr = true;
     public boolean saveRating(Rating rating) {
         //SQL für in db
         String sql = "INSERT INTO ratings (media_id, username, rating, comment) VALUES (?, ?, ?, ?)";
@@ -25,7 +24,6 @@ public class RatingRepository {
             return pstmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            System.err.println("Error saving rating: " + e.getMessage());
             return false;
         }
     }
@@ -47,7 +45,38 @@ public class RatingRepository {
 
     public List<Rating> getRatingsForMedia(int mediaId) {
         List<Rating> ratings = new ArrayList<>();
-        String sql = "SELECT * FROM ratings WHERE media_id = ?";
+        //String sql = "SELECT * FROM ratings WHERE media_id = ?"; nur approvde ratings zurückgeben
+        String sql = "SELECT * FROM ratings WHERE media_id = ? AND is_approved = true";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, mediaId);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Rating rating = new Rating();
+                rating.setId(rs.getInt("id"));
+                rating.setMediaId(rs.getInt("media_id"));
+                rating.setUsername(rs.getString("username"));
+                rating.setStars(rs.getInt("rating"));
+                rating.setComment(rs.getString("comment"));
+                rating.setApproved(rs.getBoolean("is_approved"));
+                rating.setLikes(rs.getInt("likes"));
+                rating.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+
+                ratings.add(rating);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting ratings: " + e.getMessage());
+        }
+        return ratings;
+    }
+
+    public List<Rating> getAllRatingsForMedia(int mediaId) {
+        List<Rating> ratings = new ArrayList<>();
+        String sql = "SELECT * FROM ratings WHERE media_id = ?"; //nur approvde ratings zurückgeben
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -121,5 +150,22 @@ public class RatingRepository {
             System.err.println("Error getting rating: " + e.getMessage());
         }
         return null;
+    }
+
+    public boolean approveRating(int ratingId) {
+        String sql = "UPDATE ratings SET is_approved = true WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, ratingId);
+            int rowsAffected = pstmt.executeUpdate();
+
+            return rowsAffected > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Error approving rating: " + e.getMessage());
+            return false;
+        }
     }
 }

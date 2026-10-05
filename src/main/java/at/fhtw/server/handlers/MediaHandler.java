@@ -25,7 +25,15 @@ public class MediaHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
-        String path = exchange.getRequestURI().getPath();  // NEU: Pfad holen
+        String path = exchange.getRequestURI().getPath();  // Pfad holen
+
+        if (path.contains("/rate") || path.contains("/ratings")) { // wenn rtings ratingHandler
+            // Nicht unser Job - RatingHandler soll sich kümmern
+            sendResponse(exchange, 404, "Not found"); // Oder: return
+            return;
+        }
+
+
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
 
         if (!authService.isAuthorized(authHeader)) {

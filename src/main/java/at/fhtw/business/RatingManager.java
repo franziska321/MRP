@@ -7,9 +7,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class RatingManager {
-    private final RatingRepository ratingRepository = new RatingRepository();
+    private final RatingRepository ratingRepository;
 
+    public RatingManager() {
+        this(new RatingRepository());
+    }
 
+    RatingManager(RatingRepository ratingRepository) {
+        this.ratingRepository = ratingRepository;
+    }
     public boolean rateMedia(int mediaID, String username, int stars, String comment) {
         // validate + save ratings
         if (stars < 1 || stars > 5) {
@@ -29,7 +35,7 @@ public class RatingManager {
         rating.setComment(comment);
         rating.setCreatedAt(LocalDateTime.now());
 
-        return ratingRepository.saveRating(rating); // falsch
+        return ratingRepository.saveRating(rating);
     }
 
     public List<Rating> getRatingsForMedia(int mediaId) {
@@ -54,5 +60,17 @@ public class RatingManager {
         }
 
         return ratingRepository.deleteRating(ratingId);
+    }
+
+    public List<Rating> getAllRatingsForMedia(int mediaId) {
+        return ratingRepository.getAllRatingsForMedia(mediaId);
+    }
+
+    public Rating getRatingById(int ratingId) {
+        return ratingRepository.getRatingById(ratingId);
+    }
+
+    public boolean approveRating(int ratingId) {
+        return ratingRepository.approveRating(ratingId);
     }
 }

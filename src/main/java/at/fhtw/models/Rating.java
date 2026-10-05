@@ -17,6 +17,4 @@ public class Rating {
 
     @JsonIgnore
     private LocalDateTime createdAt;
-
-    private boolean wahr = true;
 }
