@@ -3,8 +3,6 @@ package at.fhtw.server;
 import at.fhtw.models.User;
 import at.fhtw.persistence.UserRepository;
 
-import java.util.List;
-
 public class AuthService {
     private final UserRepository userRepository = new UserRepository();
 
@@ -18,14 +16,6 @@ public class AuthService {
         }
 
         String token = authHeader.substring("Bearer ".length());
-
-        List<User> users = userRepository.loadUsers();
-        for (User u : users) {
-            if (u.getToken().equals(token)) {
-                return u; // User gefunden
-            }
-        }
-
-        return null; // Kein User zu Token gefunden
+        return userRepository.findByToken(token);
     }
 }

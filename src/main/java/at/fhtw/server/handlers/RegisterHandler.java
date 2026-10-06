@@ -29,7 +29,7 @@ public class RegisterHandler implements HttpHandler {
             String response;
             if (success) {
                 // Token direkt zurückgeben
-                response = "User registered successfully. Token: " + username + "_mrpToken";
+                response = "User registered successfully. Log in to receive an access token.";
                 exchange.sendResponseHeaders(200, response.getBytes().length);
             } else {
                 response = "Username already exists";

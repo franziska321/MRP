@@ -154,4 +154,28 @@ public class UserRepository {
         }
         return null;
     }
+
+    public User findByToken(String token) {
+        String sql = "SELECT * FROM users WHERE token = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, token);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                User user = new User(
+                        rs.getString("username"),
+                        rs.getString("password_hash")
+                );
+                user.setId(rs.getInt("id"));
+                user.setToken(rs.getString("token"));
+                return user;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error finding user by token: " + e.getMessage());
+        }
+        return null;
+    }
 }
