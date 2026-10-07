@@ -8,7 +8,17 @@ import at.fhtw.persistence.UserRepository;
 import java.util.List;
 
 public class MediaManager {
-    private MediaRepository mediaRepository = new MediaRepository();
+    private final MediaRepository mediaRepository;
+    private final UserRepository userRepository;
+
+    public MediaManager() {
+        this(new MediaRepository(), new UserRepository());
+    }
+
+    MediaManager(MediaRepository mediaRepository, UserRepository userRepository) {
+        this.mediaRepository = mediaRepository;
+        this.userRepository = userRepository;
+    }
 
     public boolean createMedia(MediaContent media) {
 
@@ -63,8 +73,7 @@ public class MediaManager {
             return false;
         }
 
-        UserRepository userRepo = new UserRepository();
-        User user = userRepo.findByUsername(requestingUsername);
+        User user = userRepository.findByUsername(requestingUsername);
         if (user == null) {
             System.err.println("User " + requestingUsername + " not found");
             return false;

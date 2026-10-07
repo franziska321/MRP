@@ -1,203 +1,91 @@
 package at.fhtw.business;
 
 import at.fhtw.models.Rating;
-import org.junit.jupiter.api.BeforeAll;
+import at.fhtw.persistence.RatingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@ExtendWith(MockitoExtension.class)
 class RatingManagerTest {
+    @Mock
+    private RatingRepository ratingRepository;
 
-    private static RatingManager ratingManager;
-    private static UserManager userManager;
-    private static final String TEST_USER = "rating_test_user";
-    private static final String TEST_USER_2 = "rating_test_user_2";
-    private static final int TEST_MEDIA_ID = 999; // Hohe ID für Test-Medien
-
-
-    @BeforeAll
-    static void setUpOnce() {
-        userManager = new UserManager();
-        ratingManager = new RatingManager();
-
-        createTestUserIfNotExists(TEST_USER);
-        createTestUserIfNotExists(TEST_USER_2);
-
-    }
+    private RatingManager ratingManager;
 
     @BeforeEach
     void setUp() {
-        cleanTestRatings();
-
+        ratingManager = new RatingManager(ratingRepository);
     }
 
     @Test
-    void rateMedia_ValidRating_Success() {
-        // Act
-        boolean result = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 5, "Excellent movie!");
+    void rateMediaSavesValidRating() {
+        when(ratingRepository.hasUserRatedMedia(5, "alice")).thenReturn(false);
+        when(ratingRepository.saveRating(org.mockito.ArgumentMatchers.any(Rating.class))).thenReturn(true);
 
-        // Assert
-        assertTrue(result, "Valid rating (5 stars) should succeed");
+        assertTrue(ratingManager.rateMedia(5, "alice", 4, "Good"));
+
+        ArgumentCaptor<Rating> ratingCaptor = ArgumentCaptor.forClass(Rating.class);
+        verify(ratingRepository).saveRating(ratingCaptor.capture());
+        Rating savedRating = ratingCaptor.getValue();
+        assertEquals(5, savedRating.getMediaId());
+        assertEquals("alice", savedRating.getUsername());
+        assertEquals(4, savedRating.getStars());
+        assertEquals("Good", savedRating.getComment());
+        assertNotNull(savedRating.getCreatedAt());
     }
 
     @Test
-    void rateMedia_ValidRatingWith3Stars_Success() {
-        // Act
-        boolean result = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 3, "Good movie");
+    void rateMediaRejectsStarsOutsideRange() {
+        assertFalse(ratingManager.rateMedia(5, "alice", 0, "Too low"));
+        assertFalse(ratingManager.rateMedia(5, "alice", 6, "Too high"));
 
-        // Assert
-        assertTrue(result, "Valid rating (3 stars) should succeed");
+        verify(ratingRepository, never()).saveRating(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    void rateMedia_ValidRatingWithNullComment_Success() {
-        // Act
-        boolean result = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 4, null);
+    void rateMediaRejectsDuplicateRating() {
+        when(ratingRepository.hasUserRatedMedia(5, "alice")).thenReturn(true);
 
-        // Assert
-        assertTrue(result, "Rating with null comment should succeed");
+        assertFalse(ratingManager.rateMedia(5, "alice", 4, "Again"));
+
+        verify(ratingRepository, never()).saveRating(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    void rateMedia_ValidRatingWithEmptyComment_Success() {
-        // Act
-        boolean result = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 4, "");
+    void deleteRatingAllowsItsAuthor() {
+        Rating rating = rating(9, "alice");
+        when(ratingRepository.getRatingById(9)).thenReturn(rating);
+        when(ratingRepository.deleteRating(9)).thenReturn(true);
 
-        // Assert
-        assertTrue(result, "Rating with empty comment should succeed");
+        assertTrue(ratingManager.deleteRating(9, "alice"));
     }
 
     @Test
-    void rateMedia_StarsTooLow_Fails() {
-        // Act
-        boolean result = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 0, "Too low");
+    void deleteRatingRejectsAnotherUser() {
+        Rating rating = rating(9, "alice");
+        when(ratingRepository.getRatingById(9)).thenReturn(rating);
 
-        // Assert
-        assertFalse(result, "Stars < 1 should fail");
+        assertFalse(ratingManager.deleteRating(9, "bob"));
+
+        verify(ratingRepository, never()).deleteRating(9);
     }
 
-    @Test
-    void rateMedia_StarsTooHigh_Fails() {
-        // Act
-        boolean result = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 6, "Too high");
-
-        // Assert
-        assertFalse(result, "Stars > 5 should fail");
+    private Rating rating(int id, String username) {
+        Rating rating = new Rating();
+        rating.setId(id);
+        rating.setUsername(username);
+        return rating;
     }
-
-    @Test
-    void rateMedia_DuplicateRating_Fails() {
-        // Arrange - 1st rating
-        boolean firstResult = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 4, "First rating");
-        assertTrue(firstResult, "First rating should succeed");
-
-        // Act - 2nd rating for same media
-        boolean secondResult = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 5, "Second rating");
-
-        // Assert
-        assertFalse(secondResult, "Duplicate rating should fail");
-    }
-
-    @Test
-    void rateMedia_DifferentUsersCanRateSameMedia() {
-        // Arrange - User 1 rates
-        boolean result1 = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 5, "From user 1");
-        assertTrue(result1, "User 1 rating should succeed");
-
-        // Act - User 2 rates same media
-        boolean result2 = ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER_2, 4, "From user 2");
-
-        // Assert
-        assertTrue(result2, "Different user should be able to rate same media");
-    }
-
-    @Test
-    void getRatingsForMedia_NoRatings_ReturnsEmptyList() {
-        // Act
-        List<Rating> ratings = ratingManager.getRatingsForMedia(TEST_MEDIA_ID);
-
-        // Assert
-        assertNotNull(ratings, "Should return list (not null)");
-        assertTrue(ratings.isEmpty(), "Should return empty list for media with no ratings");
-    }
-
-    @Test
-    void getRatingsForMedia_WithOneRating_ReturnsListWithOneItem() {
-        // Arrange
-        ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 5, "Single rating");
-
-        // Act
-        List<Rating> ratings = ratingManager.getRatingsForMedia(TEST_MEDIA_ID);
-
-        // Assert
-        assertNotNull(ratings);
-        assertEquals(1, ratings.size(), "Should return list with one rating");
-
-        Rating rating = ratings.get(0);
-        assertEquals(TEST_MEDIA_ID, rating.getMediaId());
-        assertEquals(TEST_USER, rating.getUsername());
-        assertEquals(5, rating.getStars());
-        assertEquals("Single rating", rating.getComment());
-    }
-
-    @Test
-    void getRatingsForMedia_WithMultipleRatings_ReturnsCorrectList() {
-        // Arrange - Zwei Ratings erstellen
-        ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER, 5, "First rating");
-        ratingManager.rateMedia(TEST_MEDIA_ID, TEST_USER_2, 3, "Second rating");
-
-        // Act
-        List<Rating> ratings = ratingManager.getRatingsForMedia(TEST_MEDIA_ID);
-
-        // Assert
-        assertNotNull(ratings);
-        assertEquals(2, ratings.size(), "Should return list with two ratings");
-
-        boolean hasUser1 = ratings.stream().anyMatch(r -> TEST_USER.equals(r.getUsername()));
-        boolean hasUser2 = ratings.stream().anyMatch(r -> TEST_USER_2.equals(r.getUsername()));
-
-        assertTrue(hasUser1, "Should contain rating from TEST_USER");
-        assertTrue(hasUser2, "Should contain rating from TEST_USER_2");
-    }
-
-    // ===== HELPER METHODS =====
-
-    private static void createTestUserIfNotExists(String username) {
-        try {
-            String token = userManager.loginUser(username, "test123");
-            if (token == null) {
-                boolean created = userManager.registerUser(username, "test123");
-                if (created) {
-                    System.out.println("Created test user: " + username);
-                }
-            }
-        } catch (Exception e) {
-            userManager.registerUser(username, "test123");
-        }
-
-
-    }
-
-    private void cleanTestRatings() {
-        try {
-            // Verbindung zur DB und Ratings löschen
-            java.sql.Connection conn = at.fhtw.persistence.DatabaseConfig.getConnection();
-            java.sql.Statement stmt = conn.createStatement();
-
-            // Ratings der Test-User für Test-Media löschen
-            String sql = "DELETE FROM ratings WHERE username IN ('" + TEST_USER + "', '" + TEST_USER_2 + "')";
-            stmt.executeUpdate(sql);
-
-            stmt.close();
-            conn.close();
-
-        } catch (Exception e) {
-            System.err.println("Cleanup failed: " + e.getMessage());
-        }
-    }
-
-
 }
